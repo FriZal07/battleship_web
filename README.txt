@@ -1,3 +1,3 @@
 Battleship web
 
-Tried the deployed website to test a rough version of battleship
+Try the deployed website to test the rough version of battleship!
