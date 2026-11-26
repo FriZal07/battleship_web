@@ -1,58 +1,47 @@
 class Ship {
-
     #name;
     #hit_required;
     #current_hit;
     #sunk;
 
-    constructor(shipname, hit_required){
+    constructor(shipname, hit_required) {
         this.#name = shipname;
         this.#hit_required = hit_required;
         this.#current_hit = 0;
         this.#sunk = false;
     }
 
-    shipName(){
-        return this.#name;
-    }
+    shipName() { return this.#name; }
+    hitRequired() { return this.#hit_required; }
+    currentHit() { return this.#current_hit; }
+    isSunk() { return this.#sunk; }
 
-    hitRequired(){
-        return this.#hit_required;
-    }
-
-    currentHit(){
-        return this.#current_hit;
-    }
-
-    isSunk(){
-        return this.#sunk;
-    }
-
-    hit(){
+    hit() {
         if (this.#sunk === true) return;
         this.#current_hit++;
-        if (this.#current_hit == this.#hit_required) this.#sunk = true;
+        if (this.#current_hit === this.#hit_required) this.#sunk = true;
     }
 }
 
-class Gameboard{
+class Gameboard {
+    static board_array_size = 10;
 
-    static board_array_size = 5;
-
-    #board = Object.seal(Array.from({ length: Gameboard.board_array_size }, () => Object.seal(new Array(Gameboard.board_array_size).fill(null))));
-    #shipCountRemaining = [];
+    #board = Object.seal(
+        Array.from({ length: Gameboard.board_array_size }, () =>
+            Object.seal(new Array(Gameboard.board_array_size).fill(null))
+        )
+    );
+    #shipCountRemaining = 0;
     #attackedblocks = [];
 
-    returnattackedblocks(){
-        return this.#attackedblocks;
+    returnattackedblocks() { return this.#attackedblocks; }
+    returnshipremaining() { return this.#shipCountRemaining; }
+
+    getShipAt(current_grid) {
+        return this.#board[current_grid[0]][current_grid[1]];
     }
 
-    returnshipremaining(){
-        return this.#shipCountRemaining;
-    }
-
-    placeShip(current_grid,ship_ref,orientation){
-
+    shipplaceable(current_grid, ship_ref, orientation) {
         let ship_length = ship_ref.hitRequired();
 
         if (
@@ -60,56 +49,82 @@ class Gameboard{
             current_grid[0] >= Gameboard.board_array_size ||
             current_grid[1] < 0 ||
             current_grid[1] >= Gameboard.board_array_size
-            ) {
+        ) {
             return false;
         }
 
-        if (orientation == "hori"){
+        if (orientation === "hori") {
             let hori_max_len = current_grid[0] + (ship_length - 1);
-            if (hori_max_len >= Gameboard.board_array_size || current_grid[0] < 0 || current_grid[1] < 0 ) return false;
+            if (hori_max_len >= Gameboard.board_array_size) return false;
             for (let i = 0; i < ship_length; i++) {
-                if (this.#board[current_grid[0]+i][current_grid[1]] != null) return false;
+                if (this.#board[current_grid[0] + i][current_grid[1]] !== null) return false;
             }
-            for (let i = 0; i < ship_length; i++) {
-                this.#board[current_grid[0]+i][current_grid[1]] = ship_ref;
-            }
-        } else if (orientation == "verti"){
+        } else if (orientation === "verti") {
             let verti_max_len = current_grid[1] + (ship_length - 1);
-            if (verti_max_len >= Gameboard.board_array_size || current_grid[0] < 0 || current_grid[1] < 0 ) return false;
+            if (verti_max_len >= Gameboard.board_array_size) return false;
             for (let i = 0; i < ship_length; i++) {
-                if (this.#board[current_grid[0]][current_grid[1]+i]  != null) return false;
+                if (this.#board[current_grid[0]][current_grid[1] + i] !== null) return false;
             }
+        } else {
+            return false;
+        }
+
+        return true;
+    }
+
+    placeShip(current_grid, ship_ref, orientation) {
+        if (!this.shipplaceable(current_grid, ship_ref, orientation)) return false;
+        let ship_length = ship_ref.hitRequired();
+
+        if (orientation === "hori") {
             for (let i = 0; i < ship_length; i++) {
-                this.#board[current_grid[0]][current_grid[1]+i] = ship_ref;
+                this.#board[current_grid[0] + i][current_grid[1]] = ship_ref;
             }
-        } else{
+        } else if (orientation === "verti") {
+            for (let i = 0; i < ship_length; i++) {
+                this.#board[current_grid[0]][current_grid[1] + i] = ship_ref;
+            }
+        } else {
             return false;
         }
 
         this.#shipCountRemaining++;
-        return true;  
+        return true;
     }
 
-    isblockAlreadyAttacked(current_grid){
+    removeShip(ship_ref) {
+        let removed = false;
+        for (let x = 0; x < Gameboard.board_array_size; x++) {
+            for (let y = 0; y < Gameboard.board_array_size; y++) {
+                if (this.#board[x][y] === ship_ref) {
+                    this.#board[x][y] = null;
+                    removed = true;
+                }
+            }
+        }
+        if (removed) this.#shipCountRemaining--;
+    }
+
+    isblockAlreadyAttacked(current_grid) {
         return this.#attackedblocks.some(
             (block) => block[0] === current_grid[0] && block[1] === current_grid[1]
         );
     }
 
-    blockAttacked(current_grid){
+    blockAttacked(current_grid) {
         if (
             current_grid[0] < 0 ||
             current_grid[0] >= Gameboard.board_array_size ||
             current_grid[1] < 0 ||
             current_grid[1] >= Gameboard.board_array_size
-            ) {
+        ) {
             return false;
         }
         if (this.isblockAlreadyAttacked(current_grid)) return;
         let block_ref = this.#board[current_grid[0]][current_grid[1]];
 
         this.#attackedblocks.push(current_grid);
-        if (block_ref != null){
+        if (block_ref !== null) {
             block_ref.hit();
             if (block_ref.isSunk()) this.#shipCountRemaining--;
         }

@@ -1,6 +1,13 @@
+/* eslint-disable */
+
 import { Ship, Gameboard } from '../src/ship.js';
 
 describe("Ship Class Test", () => {
+
+    let newBoard;
+    let destroyer_ship;
+    let frigate_ship;
+    let tiny_ship;
 
     beforeAll(() => {
         newBoard = new Gameboard();
